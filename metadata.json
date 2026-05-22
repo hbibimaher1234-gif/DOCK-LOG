@@ -1,0 +1,6 @@
+{
+  "name": "Suivi Logistique",
+  "description": "Suivi et contrôle des opérations logistiques de chargement, déchargement et remorques.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

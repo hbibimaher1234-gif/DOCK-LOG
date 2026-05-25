@@ -20,7 +20,9 @@ data class ChargementArchive(
     val magasin: String,
     val matriculeAgent: String,
     val date: Long = System.currentTimeMillis(),
-    val itemsJson: String // Structured as a serialized helper list
+    val itemsJson: String, // Structured as a serialized helper list
+    val article: String = "",
+    val quantite: Int = 1
 )
 
 @Entity(tableName = "dechargements")
@@ -31,10 +33,11 @@ data class DechargementArchive(
     val magasin: String,
     val matriculeAgent: String,
     val date: Long = System.currentTimeMillis(),
-    val itemsJson: String // Structured list of articles
+    val itemsJson: String, // Structured list of articles
+    val quantite: Int = 1
 )
 
-@Entity(tableName = "contrôles_remorques")
+@Entity(tableName = "controles_remorques")
 data class ControleRemorqueArchive(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val inspecteur: String,
@@ -45,7 +48,7 @@ data class ControleRemorqueArchive(
     val decision: String // Accepté, Refusé, Accepté sous réserve
 )
 
-@Entity(tableName = "contrôles_exports")
+@Entity(tableName = "controles_exports")
 data class ControleExportArchive(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val inspecteur: String,

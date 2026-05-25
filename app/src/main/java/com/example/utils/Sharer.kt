@@ -24,13 +24,19 @@ object Sharer {
         targetColis: Int,
         magasin: String,
         agent: String,
-        items: List<ChargementItem>
+        items: List<ChargementItem>,
+        headerArticle: String = "",
+        headerQuantite: Int = 1
     ): String {
         val totalQty = items.sumOf { it.quantite }
         val sb = StringBuilder()
         sb.append("📋 *RAPPORT DE CHARGEMENT STOCK*\n")
         sb.append("-------------------------------------------\n")
         sb.append("🔹 *Code Livraison :* $code\n")
+        if (headerArticle.isNotEmpty()) {
+            sb.append("🔹 *Article Principal :* $headerArticle\n")
+            sb.append("🔹 *Quantité Principale :* $headerQuantite\n")
+        }
         sb.append("🔹 *Colis attendus :* $targetColis\n")
         sb.append("🔹 *Colis scannés/saisis :* ${items.size}\n")
         sb.append("🔹 *Magasin Stockage :* $magasin\n")
@@ -53,13 +59,15 @@ object Sharer {
         targetColis: Int,
         magasin: String,
         agent: String,
-        items: List<DechargementItem>
+        items: List<DechargementItem>,
+        headerQuantite: Int = 1
     ): String {
         val totalQty = items.sumOf { it.quantite }
         val sb = StringBuilder()
         sb.append("📋 *RAPPORT DE DÉCHARGEMENT STOCK*\n")
         sb.append("-------------------------------------------\n")
         sb.append("🔸 *Numéro Bon de Livraison (NBL) :* $nbl\n")
+        sb.append("🔸 *Quantité Entête :* $headerQuantite\n")
         sb.append("🔸 *Colis attendus :* $targetColis\n")
         sb.append("🔸 *Articles déchargés :* ${items.size}\n")
         sb.append("🔸 *Magasin Stockage :* $magasin\n")

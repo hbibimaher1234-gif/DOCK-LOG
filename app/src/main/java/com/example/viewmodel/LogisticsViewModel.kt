@@ -49,6 +49,39 @@ class LogisticsViewModel(private val repository: LogisticsRepository) : ViewMode
     // Global alert system
     val alertToastMessage = MutableStateFlow<String?>(null)
 
+    // Barcode Scanning system
+    val barcodeScannerActive = MutableStateFlow(false)
+    val barcodeScannerTarget = MutableStateFlow("")
+
+    fun triggerBarcodeScan(targetField: String) {
+        barcodeScannerTarget.value = targetField
+        barcodeScannerActive.value = true
+    }
+
+    fun onBarcodeScanned(value: String) {
+        val target = barcodeScannerTarget.value
+        when (target) {
+            "chargementCodeLivraison" -> chargementCodeLivraison.value = value
+            "chargementNombreColis" -> chargementNombreColis.value = value
+            "chargementMatriculeAgent" -> chargementMatriculeAgent.value = value
+            "chargementHeaderArticle" -> chargementHeaderArticle.value = value
+            "chargementHeaderQuantite" -> chargementHeaderQuantite.value = value
+            "chargementColisNum" -> chargementColisNum.value = value
+            "chargementColisArticle" -> chargementColisArticle.value = value
+            "chargementColisQuantite" -> chargementColisQuantite.value = value
+            "dechargementNbl" -> dechargementNbl.value = value
+            "dechargementNombreColis" -> dechargementNombreColis.value = value
+            "dechargementMatriculeAgent" -> dechargementMatriculeAgent.value = value
+            "dechargementHeaderQuantite" -> dechargementHeaderQuantite.value = value
+            "dechargementColisArticle" -> dechargementColisArticle.value = value
+            "dechargementColisQuantite" -> dechargementColisQuantite.value = value
+            "remorqueMatricule" -> remorqueMatricule.value = value
+            "exportMatricule" -> exportMatricule.value = value
+        }
+        barcodeScannerActive.value = false
+        alertToastMessage.value = "Code-barres scanné : $value"
+    }
+
     // ==========================================
     // 1. CHARGEMENT STOCK ACTIVE STATE
     // ==========================================
@@ -56,6 +89,8 @@ class LogisticsViewModel(private val repository: LogisticsRepository) : ViewMode
     val chargementNombreColis = MutableStateFlow("")
     val chargementSelectedMagasin = MutableStateFlow("")
     val chargementMatriculeAgent = MutableStateFlow("")
+    val chargementHeaderArticle = MutableStateFlow("")
+    val chargementHeaderQuantite = MutableStateFlow("1")
 
     val chargementColisNum = MutableStateFlow("")
     val chargementColisArticle = MutableStateFlow("")
@@ -118,6 +153,8 @@ class LogisticsViewModel(private val repository: LogisticsRepository) : ViewMode
         val target = targetStr.toIntOrNull() ?: 0
         val magasin = chargementSelectedMagasin.value
         val agent = chargementMatriculeAgent.value.trim()
+        val headerArt = chargementHeaderArticle.value.trim()
+        val headerQty = chargementHeaderQuantite.value.trim().toIntOrNull() ?: 1
         val items = activeChargementItems.value
 
         if (code.isEmpty() || items.isEmpty() || magasin.isEmpty() || agent.isEmpty()) {
@@ -131,7 +168,9 @@ class LogisticsViewModel(private val repository: LogisticsRepository) : ViewMode
                 nombreColis = target,
                 magasin = magasin,
                 matriculeAgent = agent,
-                itemsJson = ModelSerializer.serializeChargementItems(items)
+                itemsJson = ModelSerializer.serializeChargementItems(items),
+                article = headerArt,
+                quantite = headerQty
             )
             repository.insertChargement(archive)
             resetChargementFields()
@@ -145,6 +184,8 @@ class LogisticsViewModel(private val repository: LogisticsRepository) : ViewMode
         chargementNombreColis.value = ""
         chargementSelectedMagasin.value = magasins.value.firstOrNull()?.nom ?: ""
         chargementMatriculeAgent.value = ""
+        chargementHeaderArticle.value = ""
+        chargementHeaderQuantite.value = "1"
         chargementColisNum.value = ""
         chargementColisArticle.value = ""
         chargementColisQuantite.value = "1"
@@ -160,6 +201,7 @@ class LogisticsViewModel(private val repository: LogisticsRepository) : ViewMode
     val dechargementNombreColis = MutableStateFlow("")
     val dechargementSelectedMagasin = MutableStateFlow("")
     val dechargementMatriculeAgent = MutableStateFlow("")
+    val dechargementHeaderQuantite = MutableStateFlow("1")
 
     val dechargementColisArticle = MutableStateFlow("")
     val dechargementColisQuantite = MutableStateFlow("1")
@@ -215,6 +257,7 @@ class LogisticsViewModel(private val repository: LogisticsRepository) : ViewMode
         val target = targetStr.toIntOrNull() ?: 0
         val magasin = dechargementSelectedMagasin.value
         val agent = dechargementMatriculeAgent.value.trim()
+        val headerQty = dechargementHeaderQuantite.value.trim().toIntOrNull() ?: 1
         val items = activeDechargementItems.value
 
         if (nblVal.isEmpty() || items.isEmpty() || magasin.isEmpty() || agent.isEmpty()) {
@@ -228,7 +271,8 @@ class LogisticsViewModel(private val repository: LogisticsRepository) : ViewMode
                 nombreColis = target,
                 magasin = magasin,
                 matriculeAgent = agent,
-                itemsJson = ModelSerializer.serializeDechargementItems(items)
+                itemsJson = ModelSerializer.serializeDechargementItems(items),
+                quantite = headerQty
             )
             repository.insertDechargement(archive)
             resetDechargementFields()
@@ -244,6 +288,7 @@ class LogisticsViewModel(private val repository: LogisticsRepository) : ViewMode
         dechargementMatriculeAgent.value = ""
         dechargementColisArticle.value = ""
         dechargementColisQuantite.value = "1"
+        dechargementHeaderQuantite.value = "1"
         activeDechargementItems.value = emptyList()
         dechargementErrorPrompt.value = null
         dechargementSuccessPrompt.value = null

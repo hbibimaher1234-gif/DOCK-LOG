@@ -39,22 +39,22 @@ interface LogisticsDao {
     suspend fun deleteDechargement(id: Int)
 
     // Contrôle Remorque (Inspection)
-    @Query("SELECT * FROM contrôles_remorques ORDER BY date DESC")
+    @Query("SELECT * FROM controles_remorques ORDER BY date DESC")
     fun getAllControlesRemorques(): Flow<List<ControleRemorqueArchive>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertControleRemorque(controle: ControleRemorqueArchive): Long
 
-    @Query("DELETE FROM contrôles_remorques WHERE id = :id")
+    @Query("DELETE FROM controles_remorques WHERE id = :id")
     suspend fun deleteControleRemorque(id: Int)
 
     // Contrôle Export Avant Chargement
-    @Query("SELECT * FROM contrôles_exports ORDER BY date DESC")
+    @Query("SELECT * FROM controles_exports ORDER BY date DESC")
     fun getAllControlesExports(): Flow<List<ControleExportArchive>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertControleExport(controle: ControleExportArchive): Long
 
-    @Query("DELETE FROM contrôles_exports WHERE id = :id")
+    @Query("DELETE FROM controles_exports WHERE id = :id")
     suspend fun deleteControleExport(id: Int)
 }

@@ -59,6 +59,11 @@ fun MainLogisticsApp(viewModel: LogisticsViewModel) {
                 Screen.HISTORIQUE -> HistoriqueScreen(viewModel)
             }
         }
+
+        val barcodeScannerActive by viewModel.barcodeScannerActive.collectAsStateWithLifecycle()
+        if (barcodeScannerActive) {
+            BarcodeScannerDialog(viewModel = viewModel)
+        }
     }
 }
 
@@ -73,17 +78,6 @@ fun DashboardScreen(viewModel: LogisticsViewModel) {
     val totalUnloadings by viewModel.dechargements.collectAsStateWithLifecycle()
     val totalInspections by viewModel.controlesRemorques.collectAsStateWithLifecycle()
     val totalExports by viewModel.controlesExports.collectAsStateWithLifecycle()
-
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
 
     Scaffold(
         containerColor = Color(0xFFF7F9FC),
@@ -150,12 +144,7 @@ fun DashboardScreen(viewModel: LogisticsViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFF22C55E).copy(alpha = pulseAlpha))
-                    )
+                    PulsingStatusDot()
                     Text(
                         text = "Agent 724 — Connecté (Dépôt Nord)",
                         style = MaterialTheme.typography.bodySmall.copy(
@@ -531,6 +520,8 @@ fun ChargementScreen(viewModel: LogisticsViewModel) {
     val targetColis by viewModel.chargementNombreColis.collectAsStateWithLifecycle()
     val selectedMagasin by viewModel.chargementSelectedMagasin.collectAsStateWithLifecycle()
     val matriculeAgent by viewModel.chargementMatriculeAgent.collectAsStateWithLifecycle()
+    val headerArticle by viewModel.chargementHeaderArticle.collectAsStateWithLifecycle()
+    val headerQuantite by viewModel.chargementHeaderQuantite.collectAsStateWithLifecycle()
     
     // Subform colis items
     val colNum by viewModel.chargementColisNum.collectAsStateWithLifecycle()
@@ -594,7 +585,16 @@ fun ChargementScreen(viewModel: LogisticsViewModel) {
                         onValueChange = { viewModel.chargementCodeLivraison.value = it },
                         label = { Text("Code Livraison") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("chargementCodeLivraison") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF2563EB)
+                                )
+                            }
+                        }
                     )
 
                     OutlinedTextField(
@@ -603,7 +603,16 @@ fun ChargementScreen(viewModel: LogisticsViewModel) {
                         label = { Text("Nombre de colis à charger") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("chargementNombreColis") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF2563EB)
+                                )
+                            }
+                        }
                     )
 
                     // Magasin Selection with dynamic [+] dialog trigger
@@ -658,7 +667,52 @@ fun ChargementScreen(viewModel: LogisticsViewModel) {
                         onValueChange = { viewModel.chargementMatriculeAgent.value = it },
                         label = { Text("Matricule Agent / Chauffeur") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("chargementMatriculeAgent") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF2563EB)
+                                )
+                            }
+                        }
+                    )
+
+                    // NEW EN-TÊTE FIELDS: ARTICLE & QUANTITE
+                    OutlinedTextField(
+                        value = headerArticle,
+                        onValueChange = { viewModel.chargementHeaderArticle.value = it },
+                        label = { Text("Article (Entête)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("chargementHeaderArticle") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF2563EB)
+                                )
+                            }
+                        }
+                    )
+
+                    OutlinedTextField(
+                        value = headerQuantite,
+                        onValueChange = { viewModel.chargementHeaderQuantite.value = it },
+                        label = { Text("Quantité (Entête)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("chargementHeaderQuantite") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF2563EB)
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -679,7 +733,16 @@ fun ChargementScreen(viewModel: LogisticsViewModel) {
                         onValueChange = { viewModel.chargementColisNum.value = it },
                         label = { Text("Numéro colis") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("chargementColisNum") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF2563EB)
+                                )
+                            }
+                        }
                     )
 
                     OutlinedTextField(
@@ -687,7 +750,16 @@ fun ChargementScreen(viewModel: LogisticsViewModel) {
                         onValueChange = { viewModel.chargementColisArticle.value = it },
                         label = { Text("Article") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("chargementColisArticle") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF2563EB)
+                                )
+                            }
+                        }
                     )
 
                     OutlinedTextField(
@@ -696,7 +768,16 @@ fun ChargementScreen(viewModel: LogisticsViewModel) {
                         label = { Text("Quantité") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("chargementColisQuantite") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF2563EB)
+                                )
+                            }
+                        }
                     )
 
                     Button(
@@ -815,7 +896,15 @@ fun ChargementScreen(viewModel: LogisticsViewModel) {
             ) {
                 OutlinedButton(
                     onClick = {
-                        val reportText = Sharer.generateChargementText(codeLivraison, targetColis.toIntOrNull() ?: 0, selectedMagasin, matriculeAgent, activeItems)
+                        val reportText = Sharer.generateChargementText(
+                            codeLivraison, 
+                            targetColis.toIntOrNull() ?: 0, 
+                            selectedMagasin, 
+                            matriculeAgent, 
+                            activeItems,
+                            headerArticle,
+                            headerQuantite.toIntOrNull() ?: 1
+                        )
                         Sharer.generateAndSharePdf(context, "chargement_$codeLivraison", "Rapport de Chargement", reportText)
                     },
                     modifier = Modifier.weight(1f),
@@ -828,7 +917,15 @@ fun ChargementScreen(viewModel: LogisticsViewModel) {
 
                 OutlinedButton(
                     onClick = {
-                        val reportText = Sharer.generateChargementText(codeLivraison, targetColis.toIntOrNull() ?: 0, selectedMagasin, matriculeAgent, activeItems)
+                        val reportText = Sharer.generateChargementText(
+                            codeLivraison, 
+                            targetColis.toIntOrNull() ?: 0, 
+                            selectedMagasin, 
+                            matriculeAgent, 
+                            activeItems,
+                            headerArticle,
+                            headerQuantite.toIntOrNull() ?: 1
+                        )
                         Sharer.sendToWhatsApp(context, reportText)
                     },
                     modifier = Modifier.weight(1f),
@@ -875,6 +972,7 @@ fun DechargementScreen(viewModel: LogisticsViewModel) {
     val targetColis by viewModel.dechargementNombreColis.collectAsStateWithLifecycle()
     val selectedMagasin by viewModel.dechargementSelectedMagasin.collectAsStateWithLifecycle()
     val matriculeAgent by viewModel.dechargementMatriculeAgent.collectAsStateWithLifecycle()
+    val dechargementHeaderQty by viewModel.dechargementHeaderQuantite.collectAsStateWithLifecycle()
 
     val colArt by viewModel.dechargementColisArticle.collectAsStateWithLifecycle()
     val colQty by viewModel.dechargementColisQuantite.collectAsStateWithLifecycle()
@@ -935,7 +1033,16 @@ fun DechargementScreen(viewModel: LogisticsViewModel) {
                         onValueChange = { viewModel.dechargementNbl.value = it },
                         label = { Text("Numéro Bon de Livraison (NBL)") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("dechargementNbl") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF4F46E5)
+                                )
+                            }
+                        }
                     )
 
                     OutlinedTextField(
@@ -944,7 +1051,16 @@ fun DechargementScreen(viewModel: LogisticsViewModel) {
                         label = { Text("Nombre de colis à décharger") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("dechargementNombreColis") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF4F46E5)
+                                )
+                            }
+                        }
                     )
 
                     // Warehouse select dropdown
@@ -999,7 +1115,35 @@ fun DechargementScreen(viewModel: LogisticsViewModel) {
                         onValueChange = { viewModel.dechargementMatriculeAgent.value = it },
                         label = { Text("Matricule Agent / Réceptionnaire") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("dechargementMatriculeAgent") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF4F46E5)
+                                )
+                            }
+                        }
+                    )
+
+                    // NEW EN-TÊTE FIELD: QUANTITE
+                    OutlinedTextField(
+                        value = dechargementHeaderQty,
+                        onValueChange = { viewModel.dechargementHeaderQuantite.value = it },
+                        label = { Text("Quantité (Entête)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("dechargementHeaderQuantite") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF4F46E5)
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -1020,7 +1164,16 @@ fun DechargementScreen(viewModel: LogisticsViewModel) {
                         onValueChange = { viewModel.dechargementColisArticle.value = it },
                         label = { Text("Article / Description") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("dechargementColisArticle") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF4F46E5)
+                                )
+                            }
+                        }
                     )
 
                     OutlinedTextField(
@@ -1029,7 +1182,16 @@ fun DechargementScreen(viewModel: LogisticsViewModel) {
                         label = { Text("Quantité") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("dechargementColisQuantite") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF4F46E5)
+                                )
+                            }
+                        }
                     )
 
                     Button(
@@ -1135,7 +1297,14 @@ fun DechargementScreen(viewModel: LogisticsViewModel) {
             ) {
                 OutlinedButton(
                     onClick = {
-                        val reportText = Sharer.generateDechargementText(nbl, targetColis.toIntOrNull() ?: 0, selectedMagasin, matriculeAgent, activeItems)
+                        val reportText = Sharer.generateDechargementText(
+                            nbl, 
+                            targetColis.toIntOrNull() ?: 0, 
+                            selectedMagasin, 
+                            matriculeAgent, 
+                            activeItems,
+                            dechargementHeaderQty.toIntOrNull() ?: 1
+                        )
                         Sharer.generateAndSharePdf(context, "dechargement_$nbl", "Rapport de Déchargement", reportText)
                     },
                     modifier = Modifier.weight(1f),
@@ -1148,7 +1317,14 @@ fun DechargementScreen(viewModel: LogisticsViewModel) {
 
                 OutlinedButton(
                     onClick = {
-                        val reportText = Sharer.generateDechargementText(nbl, targetColis.toIntOrNull() ?: 0, selectedMagasin, matriculeAgent, activeItems)
+                        val reportText = Sharer.generateDechargementText(
+                            nbl, 
+                            targetColis.toIntOrNull() ?: 0, 
+                            selectedMagasin, 
+                            matriculeAgent, 
+                            activeItems,
+                            dechargementHeaderQty.toIntOrNull() ?: 1
+                        )
                         Sharer.sendToWhatsApp(context, reportText)
                     },
                     modifier = Modifier.weight(1f),
@@ -1247,7 +1423,16 @@ fun ControleRemorqueScreen(viewModel: LogisticsViewModel) {
                         onValueChange = { viewModel.remorqueMatricule.value = it },
                         label = { Text("N° Remorque (Matricule)") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("remorqueMatricule") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFFE58F00)
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -1488,7 +1673,16 @@ fun ControleExportScreen(viewModel: LogisticsViewModel) {
                         onValueChange = { viewModel.exportMatricule.value = it },
                         label = { Text("N° Remorque (Matricule)") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.triggerBarcodeScan("exportMatricule") }) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan",
+                                    tint = Color(0xFF0F8C79)
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -1847,7 +2041,7 @@ fun HistoriqueScreen(viewModel: LogisticsViewModel) {
     // Detail Dialog and Export blocks
     selectedLoadingItem?.let { item ->
         val itemsList = ModelSerializer.deserializeChargementItems(item.itemsJson)
-        val reportTxt = Sharer.generateChargementText(item.codeLivraison, item.nombreColis, item.magasin, item.matriculeAgent, itemsList)
+        val reportTxt = Sharer.generateChargementText(item.codeLivraison, item.nombreColis, item.magasin, item.matriculeAgent, itemsList, item.article, item.quantite)
         ArchiveDetailsDialog(
             title = "Détails Chargement",
             formattedReport = reportTxt,
@@ -1859,7 +2053,7 @@ fun HistoriqueScreen(viewModel: LogisticsViewModel) {
 
     selectedUnloadingItem?.let { item ->
         val itemsList = ModelSerializer.deserializeDechargementItems(item.itemsJson)
-        val reportTxt = Sharer.generateDechargementText(item.nbl, item.nombreColis, item.magasin, item.matriculeAgent, itemsList)
+        val reportTxt = Sharer.generateDechargementText(item.nbl, item.nombreColis, item.magasin, item.matriculeAgent, itemsList, item.quantite)
         ArchiveDetailsDialog(
             title = "Détails Déchargement",
             formattedReport = reportTxt,
@@ -2069,5 +2263,358 @@ fun AddWarehouseDialog(
                 }
             }
         }
+    }
+}
+
+
+// ==========================================
+// BARCODE SCANNER DIALOG COMPOSABLE
+// ==========================================
+@Composable
+fun BarcodeScannerDialog(viewModel: LogisticsViewModel) {
+    val targetField by viewModel.barcodeScannerTarget.collectAsStateWithLifecycle()
+    var manualCode by remember { mutableStateOf("") }
+
+    // Depending on what we are scanning for, customize descriptions and presets
+    val (targetName, presetCodes) = when (targetField) {
+        "chargementCodeLivraison" -> Pair(
+            "Code Livraison",
+            listOf("LIV-90412-FR", "LIV-88214-DE", "LIV-30219-IT")
+        )
+        "chargementNombreColis" -> Pair(
+            "Nombre de Colis (Chargement)",
+            listOf("5", "10", "15")
+        )
+        "chargementMatriculeAgent" -> Pair(
+            "Matricule Agent (Chargement)",
+            listOf("CHAUF-TR76", "CHAUF-XD90", "CHAUF-LM02")
+        )
+        "chargementHeaderArticle" -> Pair(
+            "Article Principal (Chargement)",
+            listOf("MOTEUR-V8-SPORT", "BOITE-MANUELLE-6", "CARTERS-ALUM")
+        )
+        "chargementHeaderQuantite" -> Pair(
+            "Quantité Principale (Chargement)",
+            listOf("20", "50", "100")
+        )
+        "chargementColisNum" -> Pair(
+            "Numéro Colis",
+            listOf("COLIS-A9210", "COLIS-B8823", "COLIS-C1045")
+        )
+        "chargementColisArticle" -> Pair(
+            "Article (Colis)",
+            listOf("PLAQUETTES-FREIN-P1", "AMORTISSEUR-REB-20", "PNEUS-DE-RECHANGE")
+        )
+        "chargementColisQuantite" -> Pair(
+            "Quantité (Colis)",
+            listOf("1", "2", "5")
+        )
+        "dechargementNbl" -> Pair(
+            "Numéro Bon de Livraison (NBL)",
+            listOf("NBL-40120", "NBL-99321", "NBL-32049")
+        )
+        "dechargementNombreColis" -> Pair(
+            "Nombre de Colis (Déchargement)",
+            listOf("8", "12", "24")
+        )
+        "dechargementMatriculeAgent" -> Pair(
+            "Matricule Agent (Déchargement)",
+            listOf("RECEPT-92", "RECEPT-44", "RECEPT-10")
+        )
+        "dechargementHeaderQuantite" -> Pair(
+            "Quantité Principale (Déchargement)",
+            listOf("15", "30", "60")
+        )
+        "dechargementColisArticle" -> Pair(
+            "Article (Réception)",
+            listOf("BOITE-VITESSE-AUTO", "CHASSIS-MODULE-C7", "KIT-EMBRAYAGE-HQ")
+        )
+        "dechargementColisQuantite" -> Pair(
+            "Quantité (Colis Réception)",
+            listOf("1", "3", "6")
+        )
+        "remorqueMatricule" -> Pair(
+            "N° Remorque (Contrôle Vide)",
+            listOf("REM-882-EXPORT", "REM-904-EXPORT", "REM-107-EXPORT")
+        )
+        "exportMatricule" -> Pair(
+            "N° Remorque (Contrôle Export)",
+            listOf("REM-882-EXPORT", "REM-301-EXPORT", "REM-509-EXPORT")
+        )
+        else -> Pair("Donnée Générique", listOf("COD-88210", "COD-99432", "COD-10245"))
+    }
+
+    Dialog(onDismissRequest = { viewModel.barcodeScannerActive.value = false }) {
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            border = BorderStroke(1.dp, Color(0xFF334155))
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF2563EB)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Text(
+                            text = "Lecteur Optique",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
+                    
+                    Text(
+                        text = "CIBLE: ${targetName.uppercase()}",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF94A3B8)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Beautiful HUD Scan Camera simulation
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFF020617))
+                        .border(1.dp, Color(0xFF475569), RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Corner targeting brackets (HUD photo-shoot feel)
+                    Box(modifier = Modifier.fillMaxSize().padding(14.dp)) {
+                        // Top Left Bracket
+                        Box(modifier = Modifier.align(Alignment.TopStart).size(16.dp).border(width = 3.dp, color = Color(0xFF2563EB), shape = RoundedCornerShape(topStart = 4.dp)))
+                        // Top Right Bracket
+                        Box(modifier = Modifier.align(Alignment.TopEnd).size(16.dp).border(width = 3.dp, color = Color(0xFF2563EB), shape = RoundedCornerShape(topEnd = 4.dp)))
+                        // Bottom Left Bracket
+                        Box(modifier = Modifier.align(Alignment.BottomStart).size(16.dp).border(width = 3.dp, color = Color(0xFF2563EB), shape = RoundedCornerShape(bottomStart = 4.dp)))
+                        // Bottom Right Bracket
+                        Box(modifier = Modifier.align(Alignment.BottomEnd).size(16.dp).border(width = 3.dp, color = Color(0xFF2563EB), shape = RoundedCornerShape(bottomEnd = 4.dp)))
+                    }
+
+                    // Simulated matrix scan lines or background grid
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = Color(0xFF334155),
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Recherche de code-barres (Caméra)...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF475569)
+                        )
+                    }
+
+                    // Laser scan line animating dynamically
+                    LaserScanLine()
+                }
+
+                // Interactive Simulator Segment
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "SIMULATEUR DE SCAN RAPIDE :",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = Color(0xFF64748B)
+                    )
+
+                    presetCodes.forEach { code ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF1E293B), RoundedCornerShape(12.dp))
+                                .border(1.dp, Color(0xFF334155), RoundedCornerShape(12.dp))
+                                .clickable {
+                                    viewModel.onBarcodeScanned(code)
+                                }
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCode,
+                                    contentDescription = null,
+                                    tint = Color(0xFF38BDF8),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = code,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                                    ),
+                                    color = Color.White
+                                )
+                            }
+                            
+                            Box(
+                                modifier = Modifier
+                                    .background(Color(0xFF2563EB).copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "SCANNER",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                    color = Color(0xFF38BDF8)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Manual backup textfield
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "OU OUTIL DE SAISIE MANUELLE :",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = Color(0xFF64748B)
+                    )
+
+                    OutlinedTextField(
+                        value = manualCode,
+                        onValueChange = { manualCode = it },
+                        label = { Text("Tapez / Editez manuellement ici", color = Color(0xFF64748B)) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = Color(0xFF2563EB),
+                            focusedBorderColor = Color(0xFF2563EB),
+                            unfocusedBorderColor = Color(0xFF334155)
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        trailingIcon = {
+                            if (manualCode.trim().isNotEmpty()) {
+                                IconButton(
+                                    onClick = {
+                                        viewModel.onBarcodeScanned(manualCode.trim())
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Submit",
+                                        tint = Color(0xFF38BDF8)
+                                    )
+                                }
+                            }
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Bottom actions
+                TextButton(
+                    onClick = { viewModel.barcodeScannerActive.value = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "ANNULER / FERMER LE SCAN",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFFEF4444)
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+// ==========================================
+// SEPARATED ANIMATION OPTIMIZATIONS
+// ==========================================
+@Composable
+fun PulsingStatusDot(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+    Box(
+        modifier = modifier
+            .size(8.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color(0xFF22C55E).copy(alpha = pulseAlpha))
+    )
+}
+
+@Composable
+fun LaserScanLine(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "laser")
+    val laserOffsetPerc by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.85f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "laser"
+    )
+
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val verticalOffset = maxHeight * laserOffsetPerc
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .offset(y = verticalOffset)
+                .background(Color(0xFFEF4444))
+        )
     }
 }
